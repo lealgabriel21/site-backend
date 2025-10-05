@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: #0066ff84;
+            color: #000000;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: rgb(255, 255, 255);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #000000;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #000000;
+        }
+        th {
+            background-color: grey;
+        }
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        input {
+            padding: 0.75rem;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-submit {
+            background-color: #003975;
+            color: white;
+            grid-column: 1 / -1; /* Ocupa a linha toda */
+        }
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+        .btn-delete {
+            background-color: #003975;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+        .btn-edit {
+            background-color: #ffc107;
+            color: #212529;
+            margin-right: 0.5rem;
+        }
+        .btn-edit:hover {
+            background-color: #e0a800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Controle de Estoque do Mercado</h1>
+
+        <h2>Adicionar Novo Produto</h2>
+        <form id="form-produto">
+            <div class="form-group">
+                <label for="nome">Nome do Produto</label>
+                <input type="text" id="nome" required>
+            </div>
+            <div class="form-group">
+                <label for="codigo_de_barras">Código de Barras</label>
+                <input type="text" id="codigo_de_barras">
+            </div>
+            <div class="form-group">
+                <label for="preco">Preço (R$)</label>
+                <input type="number" id="preco" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="quantidade_estoque">Quantidade</label>
+                <input type="number" id="quantidade_estoque" required>
+            </div>
+            <div class="form-group">
+                <label for="categoria">Categoria</label>
+                <input type="text" id="categoria">
+            </div>
+            <button type="submit" class="btn-submit">Adicionar Produto</button>
+        </form>
+
+        <h2>Lista de Produtos em Estoque</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Preço</th>
+                    <th>Qtd.</th>
+                    <th>Categoria</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-produtos">
+                </tbody>
+        </table>
+    </div>
+
+ <script>
+        const apiUrl = 'http://localhost:8080/api/produtos';
+        const form = document.getElementById('form-produto');
+        const tabelaProdutosBody = document.getElementById('tabela-produtos');
+    
+        let editingId = null;
+
+        // Função para ler e mostrar os produtos
+        const fetchProdutos = async () => {
+            try {
+                const response = await fetch(apiUrl);
+                const produtos = await response.json();
+
+                tabelaProdutosBody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+                produtos.forEach(produto => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.rowId = produto.id;
+                    tr.innerHTML = `
+                        <td>${produto.nome}</td>
+                        <td>R$ ${parseFloat(produto.preco).toFixed(2)}</td>
+                        <td>${produto.quantidade_estoque}</td>
+                        <td>${produto.categoria || ''}</td>
+                        <td>
+                            <button class="btn-edit" data-id="${produto.id}">Editar</button>
+                            <button class="btn-delete" data-id="${produto.id}">Excluir</button>
+                        </td>
+                    `;
+                    tabelaProdutosBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar produtos:', error);
+                alert('Não foi possível carregar os produtos. O backend está rodando?');
+            }
+        };
+
+        //  Função para criar e atualizar 
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); //  Impede que a página recarregue
+
+            const produto = {
+                nome: document.getElementById('nome').value,
+                codigo_de_barras: document.getElementById('codigo_de_barras').value,
+                preco: document.getElementById('preco').value,
+                quantidade_estoque: document.getElementById('quantidade_estoque').value,
+                categoria: document.getElementById('categoria').value,
+            };
+
+            try {
+                if (editingId) {
+                    await fetch(`${apiUrl}/${editingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(produto),
+                    });
+                } 
+                else {
+                    await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(produto),
+                    });
+                }
+                
+                form.reset();
+                editingId = null;
+                document.querySelector('.btn-submit').innerText = 'Adicionar Produto';
+                fetchProdutos(); 
+            } catch (error) {
+                console.error('Erro ao salvar produto:', error);
+                alert('Erro ao salvar produto.');
+            }
+        });
+
+        // Funções para editar e deletar
+        tabelaProdutosBody.addEventListener('click', async (event) => {
+            const isDeleteButton = event.target.classList.contains('btn-delete');
+            const isEditButton = event.target.classList.contains('btn-edit');
+
+            if (isDeleteButton) {
+                const id = event.target.dataset.id;
+                
+                if (confirm(` Quer excluir o produto com ID ${id}?`)) {
+                    try {
+                        await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+                        fetchProdutos();
+                    } catch (error) {
+                        console.error('Erro ao deletar produto:', error);
+                        alert('Erro ao deletar produto.');
+                    }
+                }
+            }
+
+            if (isEditButton) {
+                const id = event.target.dataset.id;
+                try {
+                    const response = await fetch(`${apiUrl}/${id}`);
+
+                    const produto = await response.json();
+
+                    document.getElementById('nome').value = produto.nome;
+                    document.getElementById('codigo_de_barras').value = produto.codigo_de_barras || '';
+                    document.getElementById('preco').value = produto.preco;
+                    document.getElementById('quantidade_estoque').value = produto.quantidade_estoque;
+                    document.getElementById('categoria').value = produto.categoria || '';
+
+                    editingId = id;
+
+                    document.querySelector('.btn-submit').innerText = 'Salvar Alterações';
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                } catch (error) {
+                    console.error('Erro ao buscar dados para edição:', error);
+                    alert('Não foi possível carregar os dados para edição.');
+                }
+            }
+        });
+
+        fetchProdutos();
+
+    </script>
+</body>
+</html>
