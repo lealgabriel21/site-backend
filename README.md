@@ -1,5 +1,5 @@
 # site-backend
-Descrição Geral do Sistema
+1. Descrição Geral do Sistema
 O presente projeto consiste no desenvolvimento de um sistema de controle de estoque para um mercado, seguindo a arquitetura MVC (Model-View-Controller). A aplicação permite o gerenciamento completo de produtos através de uma interface web simples e intuitiva.
 
 O sistema foi construído com um backend robusto utilizando Node.js e o framework Express.js para a criação de uma API RESTful. A persistência de dados é gerenciada pelo PostgreSQL, com o ORM (Object-Relational Mapping) Sequelize facilitando a comunicação entre a aplicação e o banco de dados.
@@ -16,7 +16,7 @@ Delete: Remover produtos do sistema.
 
 O objetivo principal é oferecer uma solução funcional e organizada para a gestão de inventário, aplicando conceitos modernos de desenvolvimento web.
 
-3. Diagrama Arquitetural
+2. Diagrama Arquitetural
 O sistema foi projetado em uma arquitetura de 3 camadas (3-Tier Architecture), uma abordagem clássica e eficiente para aplicações web.
 
 Descrição das Camadas e Tecnologias:
